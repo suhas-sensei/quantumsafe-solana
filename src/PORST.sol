@@ -3,7 +3,7 @@ pragma solidity =0.8.34;
 
 import {IERC1271} from "./interfaces/IERC1271.sol";
 
-contract PORST {
+contract PORST is IERC1271 {
     // from https://eprint.iacr.org/2017/933.pdf
     uint256 internal constant TREE_HEIGHT = 16;
     uint256 internal constant SUBSET_SIZE = 24;
@@ -16,7 +16,7 @@ contract PORST {
 
     function isValidSignature(bytes32 hash, bytes calldata signature) external view override returns (bytes4) {
         bytes32 pubkey_ = pubkey;
-        assembly { // not memory safe on purpose
+        assembly { // not `"memory-safe"`
             // the first word is the public salt used to derive the subset
             calldatacopy(0x00, signature.offset, 0x20)
             mstore(0x20, hash)
@@ -26,10 +26,10 @@ contract PORST {
 
             let heap_end := 0x40
             for {
-                let stop := add(shl(0x05, SUBSET_SIZE), heap_end)
+                let end := add(shl(0x05, SUBSET_SIZE), heap_end)
                 let seed
                 let seed_count := TREE_HEIGHT
-            } xor(heap_end, stop) { } {
+            } xor(heap_end, end) { } {
                 if lt(sub(0x100, TREE_HEIGHT), seed_count) {
                     seed := keccak256(0x00, 0x20)
                     mstore(0x00, seed)
@@ -133,10 +133,9 @@ contract PORST {
 
                 // ascend from level 0 toward park_level
                 for { let level } lt(level, park_level) { level := add(0x01, level) } {
-                    let frontier_ptr := add(shl(0x05, level), frontier_base)
-
                     let c := and(0x01, shr(level, i))
                     mstore(shl(0x05, c), node)
+
                     switch c
                     case false {
                         // sibling is a witness from the stream
@@ -146,6 +145,7 @@ contract PORST {
                     }
                     default {
                         // sibling is in frontier or stream
+                        let frontier_ptr := add(shl(0x05, level), frontier_base)
                         let parked := mload(frontier_ptr)
                         switch parked
                         case 0x00 {
