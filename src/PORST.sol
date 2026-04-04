@@ -52,7 +52,7 @@ contract PORST is IERC1271 {
                 let seed
                 let reseed_interval := div(0x100, TREE_HEIGHT)
                 let seed_count := reseed_interval
-            } xor(subset_end, end) { } {
+            } xor(subset_end, end) {} {
                 if iszero(gt(reseed_interval, seed_count)) {
                     seed := keccak256(0x00, 0x40)
                     mstore(0x00, seed)
@@ -64,7 +64,7 @@ contract PORST is IERC1271 {
 
                 let left := 0x40
                 let right := subset_end
-                for { } lt(left, right) { } {
+                for {} lt(left, right) {} {
                     let mid := add(and(not(0x1f), shr(0x01, sub(right, left))), left)
                     let mid_val := mload(mid)
                     switch lt(mid_val, selection)
@@ -85,7 +85,11 @@ contract PORST is IERC1271 {
             for { let subset_ptr := 0x40 } lt(subset_ptr, subset_end) { subset_ptr := add(0x20, subset_ptr) } {
                 let i := mload(subset_ptr)
                 let next_ptr := add(0x20, subset_ptr)
-                let park_level := xor(TREE_HEIGHT, mul(lt(next_ptr, subset_end), xor(TREE_HEIGHT, sub(0xff, clz(xor(mload(next_ptr), i))))))
+                let park_level :=
+                    xor(
+                        TREE_HEIGHT,
+                        mul(lt(next_ptr, subset_end), xor(TREE_HEIGHT, sub(0xff, clz(xor(mload(next_ptr), i)))))
+                    )
 
                 // hash leaf preimage
                 calldatacopy(0x00, cursor, 0x20)
