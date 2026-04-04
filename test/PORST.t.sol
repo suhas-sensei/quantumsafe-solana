@@ -18,7 +18,7 @@ contract PORSTTest is Test {
         // Build preimages and Merkle tree entirely in assembly.
         // Solidity's abi.encode/encodePacked allocates temporary memory on
         // each call that is never freed, causing OOM at 2^16 iterations.
-        assembly {
+        assembly ("memory-safe") {
             sstore(preimages.slot, NUM_LEAVES)
             sstore(tree.slot, mul(2, NUM_LEAVES))
 
@@ -136,12 +136,12 @@ contract PORSTTest is Test {
 
         // pack: salt || elems[0..n)
         bytes memory sig = new bytes(32 + n * 32);
-        assembly {
+        assembly ("memory-safe") {
             mstore(add(sig, 0x20), salt)
         }
         for (uint256 j; j < n; j++) {
             bytes32 e = elems[j];
-            assembly {
+            assembly ("memory-safe") {
                 mstore(add(add(sig, 0x40), shl(5, j)), e)
             }
         }
@@ -204,7 +204,7 @@ contract PORSTTest is Test {
         bytes32 hash_ = keccak256("test message");
         bytes memory sig = _sign(bytes32(uint256(42)), hash_);
         // drop the last 32 bytes
-        assembly {
+        assembly ("memory-safe") {
             mstore(sig, sub(mload(sig), 0x20))
         }
         bytes4 result = porst.isValidSignature(hash_, sig);
