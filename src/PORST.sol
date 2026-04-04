@@ -66,17 +66,16 @@ contract PORST is IERC1271 {
                 }
                 if found { continue }
 
-                for {
-                    mstore(heap_end, selection)
+                {
                     let child_ptr := heap_end
-                } lt(0x40, child_ptr) { } {
-                    let parent_ptr := add(0x20, and(not(0x1f), shr(0x01, sub(child_ptr, 0x20))))
-                    let child_val := mload(child_ptr)
-                    let parent_val := mload(parent_ptr)
-                    if iszero(lt(child_val, parent_val)) { break }
-                    mstore(child_ptr, parent_val)
-                    mstore(parent_ptr, child_val)
-                    child_ptr := parent_ptr
+                    for { } lt(0x40, child_ptr) { } {
+                        let parent_ptr := add(0x20, and(not(0x1f), shr(0x01, sub(child_ptr, 0x20))))
+                        let parent_val := mload(parent_ptr)
+                        if iszero(lt(selection, parent_val)) { break }
+                        mstore(child_ptr, parent_val)
+                        child_ptr := parent_ptr
+                    }
+                    mstore(child_ptr, selection)
                 }
                 heap_end := add(heap_end, 0x20)
             }
@@ -95,8 +94,8 @@ contract PORST is IERC1271 {
                 heap_end := sub(heap_end, 0x20)
 
                 // sift down
-                mstore(0x40, mload(heap_end))
                 {
+                    let val := mload(heap_end)
                     let ptr := 0x40
                     for { } true { } {
                         let right_child := shl(0x01, ptr)
@@ -113,12 +112,11 @@ contract PORST is IERC1271 {
                             }
                         }
 
-                        let pv := mload(ptr)
-                        if iszero(gt(pv, best_val)) { break }
+                        if iszero(gt(val, best_val)) { break }
                         mstore(ptr, best_val)
-                        mstore(best, pv)
                         ptr := best
                     }
+                    mstore(ptr, val)
                 }
 
                 let park_level := TREE_HEIGHT
