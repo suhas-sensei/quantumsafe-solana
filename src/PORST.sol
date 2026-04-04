@@ -88,7 +88,7 @@ contract PORST is IERC1271 {
             let frontier_size := shl(0x05, TREE_HEIGHT)
             codecopy(frontier_base, codesize(), frontier_size) // zeroize scratch space
 
-            let root := 0
+            let root
             for { } xor(0x40, heap_end) { } {
                 // pop
                 let i := mload(0x40)
@@ -163,10 +163,7 @@ contract PORST is IERC1271 {
                 switch eq(TREE_HEIGHT, park_level)
                 case false {
                     let frontier_ptr := add(frontier_base, shl(0x05, park_level))
-                    if mload(frontier_ptr) {
-                        root := 0x00
-                        break
-                    }
+                    if mload(frontier_ptr) { break }
                     mstore(frontier_ptr, node)
                 }
                 default { root := node }
