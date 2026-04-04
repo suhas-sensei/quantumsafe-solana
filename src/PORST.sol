@@ -25,7 +25,7 @@ contract PORST is IERC1271 {
     // | 8          | 24            | 23            | 14439 bytes          |
     // | 10         | 24            | 28            | 17319 bytes          |
     // | 16         | 32            | 23            | 20327 bytes          |
-    // | 20         | 32
+    // | 20         | 32            | 38            | 32688 bytes          |
     uint256 internal constant TREE_HEIGHT = 16;
     uint256 internal constant SUBSET_SIZE = 24;
 
