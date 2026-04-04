@@ -39,7 +39,7 @@ contract PORST is IERC1271 {
         bytes32 pubkey_ = pubkey;
         assembly { // not `"memory-safe"`
             // the first word is the public salt used to derive the subset
-            calldatacopy(0x20, signature.offset, 0x20)
+            mstore(0x20, calldataload(signature.offset))
             mstore(0x00, hash)
             mstore(0x20, keccak256(0x00, 0x40))
             mstore(0x00, 0x00)
@@ -92,7 +92,7 @@ contract PORST is IERC1271 {
                     )
 
                 // hash leaf preimage
-                calldatacopy(0x00, cursor, 0x20)
+                mstore(0x00, calldataload(cursor))
                 let node := keccak256(0x00, 0x20)
                 cursor := add(cursor, 0x20)
 
@@ -104,7 +104,7 @@ contract PORST is IERC1271 {
                     switch c
                     case false {
                         // sibling is a witness from the stream
-                        calldatacopy(0x20, cursor, 0x20)
+                        mstore(0x20, calldataload(cursor))
                         cursor := add(0x20, cursor)
                     }
                     default {
@@ -113,7 +113,7 @@ contract PORST is IERC1271 {
                         let parked := mload(frontier_ptr)
                         switch parked
                         case 0x00 {
-                            calldatacopy(0x00, cursor, 0x20)
+                            mstore(0x00, calldataload(cursor))
                             cursor := add(0x20, cursor)
                         }
                         default {
