@@ -5,6 +5,9 @@ libs = ["lib"]
 evm_version = "osaka"
 gas_limit = 5_000_000_000
 block_gas_limit = 5_000_000_000
+isolate = true
+gas_snapshot_check = true
+gas_snapshot_emit = true
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 

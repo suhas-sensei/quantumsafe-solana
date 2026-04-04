@@ -150,15 +150,17 @@ contract PORSTTest is Test {
 
     // ---- tests ----
 
-    function test_pubkey() public view {
+    function test_pubkey() public {
         assertEq(porst.pubkey(), tree[1]);
+        vm.snapshotGasLastCall("porst_pubkey");
     }
 
-    function test_validSignature() public view {
+    function test_validSignature() public {
         bytes32 hash_ = keccak256("test message");
         bytes32 salt = bytes32(uint256(42));
         bytes memory sig = _sign(salt, hash_);
         assertEq(porst.isValidSignature(hash_, sig), MAGIC);
+        vm.snapshotGasLastCall("porst_verify");
     }
 
     function test_validSignature_differentSalt() public view {
@@ -236,8 +238,10 @@ contract PORSTTest is Test {
         assertTrue(result != MAGIC);
     }
 
-    function testFuzz_validSignature(bytes32 salt, bytes32 hash_) public view {
+    function testFuzz_validSignature(bytes32 salt, bytes32 hash_) public {
+        vm.pauseGasMetering();
         bytes memory sig = _sign(salt, hash_);
+        vm.resumeGasMetering();
         assertEq(porst.isValidSignature(hash_, sig), MAGIC);
     }
 }
