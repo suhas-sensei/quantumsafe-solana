@@ -5,6 +5,27 @@ import {IERC1271} from "./interfaces/IERC1271.sol";
 
 /// https://eprint.iacr.org/2017/933.pdf
 contract PORST is IERC1271 {
+    // For security; given a signing capacity `r`, tree height `a` (total leaves `2ᵃ`)
+    // [TREE_HEIGHT], and subset size `k` [SUBSET_SIZE]; you must choose parameters such that:
+    //
+    // k-1
+    // Sum[ log_2(k*r - j) - log_2(2**a - j) ] < -256
+    // j=0
+    //
+    // Signature verification costs are dominated by the size of the witness. The following table
+    // gives suggested average-witness-optimizing choices for `TREE_HEIGHT` and `SUBSET_SIZE` given
+    // a specific target signing capacity.
+    //
+    // | `log_2(r)` | `TREE_HEIGHT` | `SUBSET_SIZE` | average witness size |
+    // | :--------- | :------------ | :------------ | :------------------- |
+    // | 1          | 16            | 24            | 8877 bytes           |
+    // | 1          | 24            | 13            | 8514 bytes           |
+    // | 4          | 16            | 38            | 13236 bytes          |
+    // | 4          | 24            | 16            | 10320 bytes          |
+    // | 8          | 24            | 23            | 14439 bytes          |
+    // | 10         | 24            | 28            | 17319 bytes          |
+    // | 16         | 32            | 23            | 20327 bytes          |
+    // | 20         | 32
     uint256 internal constant TREE_HEIGHT = 16;
     uint256 internal constant SUBSET_SIZE = 24;
 
