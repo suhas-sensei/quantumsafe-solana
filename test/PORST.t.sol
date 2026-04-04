@@ -7,7 +7,7 @@ import {PORST} from "../src/PORST.sol";
 contract PORSTTest is Test {
     uint256 internal constant TREE_HEIGHT = 16;
     uint256 internal constant SUBSET_SIZE = 24;
-    uint256 internal constant NUM_LEAVES = uint256(1) << TREE_HEIGHT;
+    uint256 internal constant NUM_LEAVES = 65536;
     bytes4 internal constant MAGIC = 0x1626ba7e;
 
     PORST porst;
