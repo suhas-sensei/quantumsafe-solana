@@ -235,4 +235,9 @@ contract PORSTTest is Test {
         bytes4 result = wrong.isValidSignature(hash_, sig);
         assertTrue(result != MAGIC);
     }
+
+    function testFuzz_validSignature(bytes32 salt, bytes32 hash_) public view {
+        bytes memory sig = _sign(salt, hash_);
+        assertEq(porst.isValidSignature(hash_, sig), MAGIC);
+    }
 }
