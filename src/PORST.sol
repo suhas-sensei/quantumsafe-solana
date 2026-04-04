@@ -85,8 +85,7 @@ contract PORST is IERC1271 {
             let cursor := add(0x20, signature.offset)
 
             let frontier_base := add(0x40, shl(0x05, SUBSET_SIZE))
-            let frontier_size := shl(0x05, TREE_HEIGHT)
-            codecopy(frontier_base, codesize(), frontier_size) // zeroize scratch space
+            codecopy(frontier_base, codesize(), shl(0x05, TREE_HEIGHT))
 
             for { } xor(0x40, heap_end) { } {
                 // pop
@@ -161,7 +160,7 @@ contract PORST is IERC1271 {
             }
 
             let success := eq(cursor, add(signature.offset, signature.length))
-            success := and(success, eq(pubkey_, mload(add(frontier_base, shl(0x05, TREE_HEIGHT)))))
+            success := and(eq(pubkey_, mload(add(frontier_base, shl(0x05, TREE_HEIGHT)))), success)
 
             mstore(0x00, shl(0xe0, xor(0xffffffff, mul(0xe9d94581, success))))
             return(0x00, 0x20)
