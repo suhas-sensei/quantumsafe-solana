@@ -30,7 +30,7 @@ contract PORST is IERC1271 {
                 let seed
                 let seed_count := TREE_HEIGHT
             } xor(heap_end, end) { } {
-                if lt(sub(0x100, TREE_HEIGHT), seed_count) {
+                if lt(div(0x100, TREE_HEIGHT), seed_count) {
                     seed := keccak256(0x00, 0x20)
                     mstore(0x00, seed)
                     seed_count := 0x00
@@ -161,7 +161,14 @@ contract PORST is IERC1271 {
                 }
 
                 switch eq(TREE_HEIGHT, park_level)
-                case false { mstore(add(shl(0x05, park_level), frontier_base), node) }
+                case false {
+                    let frontier_ptr := add(frontier_base, shl(0x05, park_level))
+                    if mload(frontier_ptr) {
+                        root := 0x00
+                        break
+                    }
+                    mstore(frontier_ptr, node)
+                }
                 default { root := node }
             }
 
