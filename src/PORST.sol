@@ -65,7 +65,7 @@ contract PORST is IERC1271 {
                 let left := 0x40
                 let right := subset_end
                 for {} lt(left, right) {} {
-                    let mid := add(and(not(0x1f), shr(0x01, sub(right, left))), left)
+                    let mid := and(not(0x1f), shr(0x01, add(left, right)))
                     let mid_val := mload(mid)
                     switch lt(mid_val, selection)
                     case false { right := mid }
