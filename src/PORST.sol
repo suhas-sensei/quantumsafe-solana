@@ -89,7 +89,6 @@ contract PORST is IERC1271 {
             let frontier_size := shl(0x05, TREE_HEIGHT)
             codecopy(frontier_base, codesize(), frontier_size) // zeroize scratch space
 
-            let root
             for { } xor(0x40, heap_end) { } {
                 // pop
                 let i := mload(0x40)
@@ -145,7 +144,7 @@ contract PORST is IERC1271 {
                     }
                     default {
                         // sibling is in frontier or stream
-                        let frontier_ptr := add(shl(0x05, level), frontier_base)
+                        let frontier_ptr := add(frontier_base, shl(0x05, level))
                         let parked := mload(frontier_ptr)
                         switch parked
                         case 0x00 {
@@ -160,17 +159,11 @@ contract PORST is IERC1271 {
                     node := keccak256(0x00, 0x40)
                 }
 
-                switch eq(TREE_HEIGHT, park_level)
-                case false {
-                    let frontier_ptr := add(frontier_base, shl(0x05, park_level))
-                    if mload(frontier_ptr) { break }
-                    mstore(frontier_ptr, node)
-                }
-                default { root := node }
+                mstore(add(frontier_base, shl(0x05, park_level)), node)
             }
 
-            let success := eq(pubkey_, root)
-            success := and(success, eq(cursor, add(signature.offset, signature.length)))
+            let success := eq(cursor, add(signature.offset, signature.length))
+            success := and(success, eq(pubkey_, mload(add(frontier_base, shl(0x05, TREE_HEIGHT)))))
 
             mstore(0x00, shl(0xe0, xor(0xffffffff, mul(0xe9d94581, success))))
             return(0x00, 0x20)
