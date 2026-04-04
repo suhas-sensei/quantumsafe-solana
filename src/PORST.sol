@@ -20,7 +20,8 @@ contract PORST is IERC1271 {
             // the first word is the public salt used to derive the subset
             calldatacopy(0x00, signature.offset, 0x20)
             mstore(0x20, hash)
-            mstore(0x00, keccak256(0x00, 0x40))
+            mstore(0x20, keccak256(0x00, 0x40))
+            mstore(0x00, 0x00)
 
             // determine the subset of preimages that serve as the signature
 
@@ -32,7 +33,7 @@ contract PORST is IERC1271 {
                 let seed_count := reseed_interval
             } xor(heap_end, end) { } {
                 if iszero(gt(reseed_interval, seed_count)) {
-                    seed := keccak256(0x00, 0x20)
+                    seed := keccak256(0x00, 0x40)
                     mstore(0x00, seed)
                     seed_count := 0x00
                 }
