@@ -65,18 +65,17 @@ contract PORST is IERC1271 {
                 let left := 0x40
                 let right := subset_end
                 for { } lt(left, right) { } {
-                    let mid := add(left, and(not(0x1f), shr(0x01, sub(right, left))))
+                    let mid := add(and(not(0x1f), shr(0x01, sub(right, left))), left)
                     let mid_val := mload(mid)
                     switch lt(mid_val, selection)
-                    case true { left := add(mid, 0x20) }
-                    default { right := mid }
+                    case false { right := mid }
+                    default { left := add(0x20, mid) }
                 }
                 if and(lt(left, subset_end), eq(mload(left), selection)) { continue }
 
-                let suffix_len := sub(subset_end, left)
-                if suffix_len { mcopy(add(left, 0x20), left, suffix_len) }
+                mcopy(add(0x20, left), left, sub(subset_end, left))
                 mstore(left, selection)
-                subset_end := add(subset_end, 0x20)
+                subset_end := add(0x20, subset_end)
             }
 
             // verify the Merkle multiproof that the correct preimages have been supplied
