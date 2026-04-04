@@ -22,6 +22,8 @@ contract PORST {
             mstore(0x20, hash)
             mstore(0x00, keccak256(0x00, 0x40))
 
+            // determine the subset of preimages that serve as the signature
+
             let heap_end := 0x40
             for {
                 let stop := add(shl(0x05, SUBSET_SIZE), heap_end)
@@ -78,7 +80,7 @@ contract PORST {
                 heap_end := add(heap_end, 0x20)
             }
 
-            // Merkle multiproof verification
+            // verify the Merkle multiproof that the correct preimages have been supplied
 
             let cursor := add(0x20, signature.offset)
 
@@ -133,10 +135,11 @@ contract PORST {
                 for { let level } lt(level, park_level) { level := add(0x01, level) } {
                     let frontier_ptr := add(shl(0x05, level), frontier_base)
 
-                    switch and(0x01, shr(level, i))
+                    let c := and(0x01, shr(level, i))
+                    mstore(shl(0x05, c), node)
+                    switch c
                     case false {
                         // sibling is a witness from the stream
-                        mstore(0x00, node)
                         calldatacopy(0x20, cursor, 0x20)
                         cursor := add(0x20, cursor)
                         node := keccak256(0x00, 0x40)
@@ -144,21 +147,21 @@ contract PORST {
                     default {
                         // sibling is in frontier or stream
                         let parked := mload(frontier_ptr)
-                        if parked {
-                            mstore(0x00, parked)
-                            mstore(frontier_ptr, 0x00)
-                        }
-                        if iszero(parked) {
+                        switch parked
+                        case 0x00 {
                             calldatacopy(0x00, cursor, 0x20)
                             cursor := add(0x20, cursor)
                         }
-                        mstore(0x20, node)
+                        default {
+                            mstore(0x00, parked)
+                            mstore(frontier_ptr, 0x00)
+                        }
                         node := keccak256(0x00, 0x40)
                     }
                 }
 
                 switch eq(TREE_HEIGHT, park_level)
-                case false { mstore(add(frontier_base, shl(5, park_level)), node) }
+                case false { mstore(add(shl(0x05, park_level), frontier_base), node) }
                 default { root := node }
             }
 
