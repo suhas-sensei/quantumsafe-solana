@@ -24,13 +24,13 @@ contract PORST is IERC1271 {
 
             // determine the subset of preimages that serve as the signature
 
-            let heap_end := 0x40
+            let subset_end := 0x40
             for {
-                let end := add(shl(0x05, SUBSET_SIZE), heap_end)
+                let end := add(shl(0x05, SUBSET_SIZE), subset_end)
                 let seed
                 let reseed_interval := div(0x100, TREE_HEIGHT)
                 let seed_count := reseed_interval
-            } xor(heap_end, end) { } {
+            } xor(subset_end, end) { } {
                 if iszero(gt(reseed_interval, seed_count)) {
                     seed := keccak256(0x00, 0x20)
                     mstore(0x00, seed)
@@ -40,44 +40,21 @@ contract PORST is IERC1271 {
                 let selection := and(sub(shl(TREE_HEIGHT, 0x01), 0x01), seed)
                 seed := shr(TREE_HEIGHT, seed)
 
-                let found
-                for {
-                    let stack_ptr := heap_end
-                    mstore(stack_ptr, 0x40)
-                    stack_ptr := add(stack_ptr, 0x20)
-                } gt(stack_ptr, heap_end) { } {
-                    stack_ptr := sub(stack_ptr, 0x20)
-                    let node := mload(stack_ptr)
-                    if lt(node, heap_end) {
-                        let node_val := mload(node)
-                        if eq(node_val, selection) {
-                            found := true
-                            break
-                        }
-                        if lt(node_val, selection) {
-                            let right_child := shl(0x01, node)
-                            let left_child := sub(right_child, 0x20)
-                            mstore(stack_ptr, right_child)
-                            stack_ptr := add(0x20, stack_ptr)
-                            mstore(stack_ptr, left_child)
-                            stack_ptr := add(0x20, stack_ptr)
-                        }
-                    }
+                let left := 0x40
+                let right := subset_end
+                for { } lt(left, right) { } {
+                    let mid := add(left, and(not(0x1f), shr(0x01, sub(right, left))))
+                    let mid_val := mload(mid)
+                    switch lt(mid_val, selection)
+                    case true { left := add(mid, 0x20) }
+                    default { right := mid }
                 }
-                if found { continue }
+                if and(lt(left, subset_end), eq(mload(left), selection)) { continue }
 
-                {
-                    let child_ptr := heap_end
-                    for { } lt(0x40, child_ptr) { } {
-                        let parent_ptr := add(0x20, and(not(0x1f), shr(0x01, sub(child_ptr, 0x20))))
-                        let parent_val := mload(parent_ptr)
-                        if iszero(lt(selection, parent_val)) { break }
-                        mstore(child_ptr, parent_val)
-                        child_ptr := parent_ptr
-                    }
-                    mstore(child_ptr, selection)
-                }
-                heap_end := add(heap_end, 0x20)
+                let suffix_len := sub(subset_end, left)
+                if suffix_len { mcopy(add(left, 0x20), left, suffix_len) }
+                mstore(left, selection)
+                subset_end := add(subset_end, 0x20)
             }
 
             // verify the Merkle multiproof that the correct preimages have been supplied
@@ -85,44 +62,14 @@ contract PORST is IERC1271 {
             let cursor := add(0x20, signature.offset)
 
             let frontier_base := add(0x40, shl(0x05, SUBSET_SIZE))
-            let frontier_size := shl(0x05, TREE_HEIGHT)
-            codecopy(frontier_base, codesize(), frontier_size) // zeroize scratch space
 
             let root
-            for { } xor(0x40, heap_end) { } {
-                // pop
-                let i := mload(0x40)
-                heap_end := sub(heap_end, 0x20)
-
-                // sift down
-                {
-                    let val := mload(heap_end)
-                    let ptr := 0x40
-                    for { } true { } {
-                        let right_child := shl(0x01, ptr)
-                        let left_child := sub(right_child, 0x20)
-                        if iszero(lt(left_child, heap_end)) { break }
-
-                        let best := left_child
-                        let best_val := mload(left_child)
-                        if lt(right_child, heap_end) {
-                            let rv := mload(right_child)
-                            if lt(rv, best_val) {
-                                best := right_child
-                                best_val := rv
-                            }
-                        }
-
-                        if iszero(gt(val, best_val)) { break }
-                        mstore(ptr, best_val)
-                        ptr := best
-                    }
-                    mstore(ptr, val)
-                }
-
+            for { let subset_ptr := 0x40 } lt(subset_ptr, subset_end) { subset_ptr := add(subset_ptr, 0x20) } {
+                let i := mload(subset_ptr)
                 let park_level := TREE_HEIGHT
-                if xor(0x40, heap_end) {
-                    park_level := sub(0xff, clz(xor(mload(0x40), i)))
+                let next_ptr := add(subset_ptr, 0x20)
+                if lt(next_ptr, subset_end) {
+                    park_level := sub(0xff, clz(xor(mload(next_ptr), i)))
                 }
 
                 // hash leaf preimage
