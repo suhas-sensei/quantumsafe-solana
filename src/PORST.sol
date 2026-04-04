@@ -39,8 +39,8 @@ contract PORST is IERC1271 {
         bytes32 pubkey_ = pubkey;
         assembly { // not `"memory-safe"`
             // the first word is the public salt used to derive the subset
-            calldatacopy(0x00, signature.offset, 0x20)
-            mstore(0x20, hash)
+            calldatacopy(0x20, signature.offset, 0x20)
+            mstore(0x00, hash)
             mstore(0x20, keccak256(0x00, 0x40))
             mstore(0x00, 0x00)
 
