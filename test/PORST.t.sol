@@ -15,19 +15,34 @@ contract PORSTTest is Test {
     bytes32[] preimages;
 
     function setUp() public {
-        // Generate deterministic preimages
-        preimages = new bytes32[](NUM_LEAVES);
-        for (uint256 i; i < NUM_LEAVES; i++) {
-            preimages[i] = keccak256(abi.encode(i));
-        }
+        // Build preimages and Merkle tree entirely in assembly.
+        // Solidity's abi.encode/encodePacked allocates temporary memory on
+        // each call that is never freed, causing OOM at 2^16 iterations.
+        assembly {
+            sstore(preimages.slot, NUM_LEAVES)
+            sstore(tree.slot, mul(2, NUM_LEAVES))
 
-        // Build Merkle tree
-        tree = new bytes32[](2 * NUM_LEAVES);
-        for (uint256 i; i < NUM_LEAVES; i++) {
-            tree[NUM_LEAVES + i] = keccak256(abi.encodePacked(preimages[i]));
-        }
-        for (uint256 i = NUM_LEAVES - 1; i >= 1; i--) {
-            tree[i] = keccak256(abi.encodePacked(tree[2 * i], tree[2 * i + 1]));
+            mstore(0x00, preimages.slot)
+            let preSlot := keccak256(0x00, 0x20)
+            mstore(0x00, tree.slot)
+            let treeSlot := keccak256(0x00, 0x20)
+
+            // preimages[i] = keccak256(i), tree[N+i] = keccak256(preimages[i])
+            for { let i } lt(i, NUM_LEAVES) { i := add(i, 1) } {
+                mstore(0x00, i)
+                let pre := keccak256(0x00, 0x20)
+                sstore(add(preSlot, i), pre)
+                mstore(0x00, pre)
+                sstore(add(treeSlot, add(NUM_LEAVES, i)), keccak256(0x00, 0x20))
+            }
+
+            // tree[i] = keccak256(tree[2i] || tree[2i+1])
+            for { let i := sub(NUM_LEAVES, 1) } gt(i, 0) { i := sub(i, 1) } {
+                let l := shl(1, i)
+                mstore(0x00, sload(add(treeSlot, l)))
+                mstore(0x20, sload(add(treeSlot, add(l, 1))))
+                sstore(add(treeSlot, i), keccak256(0x00, 0x40))
+            }
         }
 
         porst = new PORST(tree[1]);
