@@ -3,8 +3,8 @@ pragma solidity =0.8.34;
 
 import {IERC1271} from "./interfaces/IERC1271.sol";
 
+/// https://eprint.iacr.org/2017/933.pdf
 contract PORST is IERC1271 {
-    // from https://eprint.iacr.org/2017/933.pdf
     uint256 internal constant TREE_HEIGHT = 16;
     uint256 internal constant SUBSET_SIZE = 24;
 
@@ -28,9 +28,10 @@ contract PORST is IERC1271 {
             for {
                 let end := add(shl(0x05, SUBSET_SIZE), heap_end)
                 let seed
-                let seed_count := TREE_HEIGHT
+                let reseed_interval := div(0x100, TREE_HEIGHT)
+                let seed_count := reseed_interval
             } xor(heap_end, end) { } {
-                if lt(div(0x100, TREE_HEIGHT), seed_count) {
+                if iszero(gt(reseed_interval, seed_count)) {
                     seed := keccak256(0x00, 0x20)
                     mstore(0x00, seed)
                     seed_count := 0x00
@@ -141,7 +142,6 @@ contract PORST is IERC1271 {
                         // sibling is a witness from the stream
                         calldatacopy(0x20, cursor, 0x20)
                         cursor := add(0x20, cursor)
-                        node := keccak256(0x00, 0x40)
                     }
                     default {
                         // sibling is in frontier or stream
@@ -156,8 +156,8 @@ contract PORST is IERC1271 {
                             mstore(0x00, parked)
                             mstore(frontier_ptr, 0x00)
                         }
-                        node := keccak256(0x00, 0x40)
                     }
+                    node := keccak256(0x00, 0x40)
                 }
 
                 switch eq(TREE_HEIGHT, park_level)
