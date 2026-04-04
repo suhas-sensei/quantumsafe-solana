@@ -81,16 +81,11 @@ contract PORST is IERC1271 {
             // verify the Merkle multiproof that the correct preimages have been supplied
 
             let cursor := add(0x20, signature.offset)
-
             let frontier_base := add(0x40, shl(0x05, SUBSET_SIZE))
-
-            for { let subset_ptr := 0x40 } lt(subset_ptr, subset_end) { subset_ptr := add(subset_ptr, 0x20) } {
+            for { let subset_ptr := 0x40 } lt(subset_ptr, subset_end) { subset_ptr := add(0x20, subset_ptr) } {
                 let i := mload(subset_ptr)
-                let park_level := TREE_HEIGHT
-                let next_ptr := add(subset_ptr, 0x20)
-                if lt(next_ptr, subset_end) {
-                    park_level := sub(0xff, clz(xor(mload(next_ptr), i)))
-                }
+                let next_ptr := add(0x20, subset_ptr)
+                let park_level := xor(TREE_HEIGHT, mul(lt(next_ptr, subset_end), xor(TREE_HEIGHT, sub(0xff, clz(xor(mload(next_ptr), i))))))
 
                 // hash leaf preimage
                 calldatacopy(0x00, cursor, 0x20)
