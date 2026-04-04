@@ -172,8 +172,8 @@ contract PORST is IERC1271 {
             let success := eq(pubkey_, root)
             success := and(success, eq(cursor, add(signature.offset, signature.length)))
 
-            mstore(0x00, xor(0xffffffff, mul(0xe9d94581, success)))
-            return(0x1c, 0x04)
+            mstore(0x00, shl(0xe0, xor(0xffffffff, mul(0xe9d94581, success))))
+            return(0x00, 0x20)
         }
     }
 }
