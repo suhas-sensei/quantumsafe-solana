@@ -1,0 +1,11 @@
+[package]
+name = "porst-core"
+version = "0.1.0"
+description = "Shared PORST verification primitives (faithful to PORST.sol), used by the on-chain programs and the off-chain signer."
+edition = "2021"
+
+[lib]
+name = "porst_core"
+
+[dependencies]
+solana-keccak-hasher = "2"

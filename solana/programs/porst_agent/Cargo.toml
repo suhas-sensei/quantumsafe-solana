@@ -1,0 +1,29 @@
+[package]
+name = "porst_agent"
+version = "0.1.0"
+description = "PORST/XMSS post-quantum authorization for autonomous Solana agents: swaps execute only with a valid post-quantum signature."
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "porst_agent"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "0.32.1"
+anchor-spl = "0.32.1"
+porst-core = { path = "../../core" }
+cpswap = { path = "../cpswap", features = ["cpi", "no-entrypoint"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

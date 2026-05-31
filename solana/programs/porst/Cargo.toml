@@ -1,0 +1,30 @@
+[package]
+name = "porst"
+version = "0.1.0"
+description = "PORST post-quantum few-time signature verifier (Solana port of PORST.sol)"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "porst"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+
+[dependencies]
+anchor-lang = "0.32.1"
+solana-keccak-hasher = "2"
+porst-core = { path = "../../core" }
+
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

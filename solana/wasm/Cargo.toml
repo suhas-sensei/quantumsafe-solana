@@ -1,0 +1,15 @@
+[package]
+name = "porst-wasm"
+version = "0.1.0"
+description = "Browser (WASM) bindings for the PORST/XMSS post-quantum signer."
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+porst-signer = { path = "../signer" }
+wasm-bindgen = "0.2"
+serde_json = "1"
+hex = "0.4"
+getrandom = { version = "0.2", features = ["js"] }

@@ -1,0 +1,21 @@
+.anchor
+.DS_Store
+target
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+
+# wasm-pack build output
+wasm/pkg
+wasm/pkg-node
+
+# agent test artifacts
+.tmp-keystore.json
+.tmp-agent-keystore.json
+*.sock
+
+# agent runtime secrets — wallet seed keystore + LLM API keys. NEVER commit.
+agent/.demo/
+**/.demo/
+.env
