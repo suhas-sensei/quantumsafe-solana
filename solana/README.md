@@ -8,6 +8,11 @@ stateful signer, a smart-contract wallet that authorizes SOL transfers with
 post-quantum signatures, a client SDK, deployment tooling, and a security
 review.
 
+**On top of this sits a talk-to-trade app** ([`agent/`](agent/README.md)): an AI
+reads a live Pyth price feed and *proposes* spot swaps and leveraged **SOL-PERP**
+positions — and a post-quantum signature from an isolated signer (never the AI)
+authorizes each one on-chain. The model proposes; it never signs.
+
 All hashing is Ethereum-compatible Keccak-256, identical to `PORST.sol`. The
 verification logic is shared verbatim between the on-chain programs and the
 off-chain signer (one crate, [`porst-core`](core/src/lib.rs)) so they cannot
@@ -21,6 +26,7 @@ drift.
 | [`programs/porst/`](programs/porst/src/lib.rs) | The **few-time** verifier — a 1:1 behavioral port of `PORST.sol` exposed as a Solana program. |
 | [`programs/porst_wallet/`](programs/porst_wallet/src/lib.rs) | The **many-time smart-contract wallet**: `create_wallet`, `write_buffer`, `execute_transfer`. |
 | [`programs/porst_agent/`](programs/porst_agent/src/lib.rs) | **Post-quantum authorization for AI agents**: `execute_swap` runs a real DEX swap only with a valid PORST signature. |
+| [`programs/porst_perp/`](programs/porst_perp/src/lib.rs) | **Post-quantum perpetual-futures engine**: `open_position`/`close_position` (leverage, maintenance-margin liquidation, stop-loss/take-profit, Pyth price) gated by a PORST signature. |
 | [`programs/cpswap/`](programs/cpswap/src/lib.rs) | A real constant-product AMM (on-chain DEX) — the local swap target for `porst_agent`. |
 | [`signer/`](signer/src/lib.rs) (`porst-signer`) | Hardened off-chain keygen + many-time signing library and CLI. |
 | [`wasm/`](wasm/README.md) (`porst-wasm`) | Browser/Node WASM signer — byte-for-byte identical to the CLI. |
@@ -39,6 +45,47 @@ drift.
 | `SIGNING_CAPACITY` | 16 | safe signatures per PORST key (~258-bit security, per `PORST.sol`'s table) |
 | `XMSS_HEIGHT` | 4 | `2^4 = 16` PORST keys (epochs) per wallet |
 | lifetime | **256** | `NUM_EPOCHS × SIGNING_CAPACITY` total signatures |
+
+---
+
+## Run the trading app locally
+
+Needs Rust, Solana CLI (Agave 4.0), Anchor 0.32, Node 22, `yarn`, `wasm-pack`.
+
+```bash
+# 1. build the programs + the WASM signer
+anchor build
+wasm-pack build wasm --target nodejs --out-dir pkg-node --release
+wasm-pack build wasm --target web     --out-dir pkg      --release
+
+# 2. local validator (leave running in another shell)
+solana-test-validator --reset
+
+# 3. fund + deploy the three programs the app uses
+solana airdrop 100 --url localhost
+for p in cpswap porst_agent porst_perp; do
+  solana program deploy target/deploy/$p.so \
+    --program-id target/deploy/$p-keypair.json --url localhost
+done
+
+# 4. build the web UI + install deps
+yarn install
+( cd web && npm install && npm run build )
+
+# 5. (optional) turn on AI mode — without a key it falls back to a regex parser
+echo "OPENAI_API_KEY=sk-..." > agent/.demo/.env   # or ANTHROPIC_API_KEY=...
+
+# 6. run the agent server (serves the UI + the API)
+set -a; . agent/.demo/.env 2>/dev/null; set +a
+ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=~/.config/solana/id.json PORT=8787 \
+  ./node_modules/.bin/ts-node --transpile-only -P tsconfig.json agent/server.ts
+```
+
+Open **http://127.0.0.1:8787** → **Perps** tab. Tell the AI something like
+*"I'm bullish on SOL, you decide"*, approve the proposal, and a post-quantum
+signature opens the position on-chain. To run against devnet instead, set
+`ANCHOR_PROVIDER_URL=https://api.devnet.solana.com` (programs must be deployed
+there first). End-to-end engine test: `yarn ts-node agent/perp-e2e.ts`.
 
 ---
 
